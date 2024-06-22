@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="trang.css">
+    
+</head>
+<body>
+    <div class="box">
+        <div class="box1">
+            <h1> Trang chủ</h1>
+            <h1>Quản lý quần</h1>
+            <h1 onclick="qla()">Quản Lý áo</h1>
+            <h1 >Quản lý nhân viên</h2>
+            <h1 onclick="doanhthu()">Doanh thu hôm nay</h1>
+        </div>
+        <div class="box2">
+            <h2>Giới Thiệu</h2>
+            <p1>Chào mừng đến với trang quản lý sản phẩm của shop DQV</p1>
+            <h2>Độ uy tín</h2>
+            <div id="c1">
+                <h3>21.000</h3>
+                <p2>Khách hàng</p2>
+            </div>
+            <div id="c2">
+                <h3>12</h3>
+                <p2>Năm Xây Dựng uy tín</p2>
+            </div>
+            <div id="c3">
+                <h3>5.000.000</h3>
+                <p2>Sản phẩm được bán ra</p2>
+            </div>
+
+        </div>
+
+    </div>
+</body>
+</html>
+<script>
+     function qla(){
+        window.location.href = "qla.html";
+    }
+    function doanhthu(){
+        window.location.href = "checkout.html";
+    }
+</script>

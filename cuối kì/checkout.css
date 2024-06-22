@@ -1,0 +1,97 @@
+body{
+    background-color: #ffffff;
+    font-family: system-ui;
+
+}
+.box{
+
+    width:100%;
+    max-width: 100%;
+
+    margin:auto;
+
+    display: grid;
+    grid-template-columns: 20% 75%;
+    column-gap: 2%;
+}
+.box1{
+    padding-top: 30px;
+    position:relative;
+    background-color: rgb(107, 169, 208);
+    height: 100%;
+}
+
+h1{
+    text-align: center;
+    display: inline-block;
+    height: 100px;
+    width: 296px;
+
+}
+h1:hover{
+    background-color: aqua;
+    color: rgb(195, 105, 49);
+}
+h1:active {
+    color: greenyellow;
+    background-color: rgb(85, 153, 198);
+
+} 
+h1, h2 {
+    text-align: center;
+}
+
+h2 {
+    text-align: center;
+    margin-top: 20px;
+    color: #333;
+}
+
+#order-details {
+    width: 80%;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+#order-details p {
+    margin: 10px 0;
+    color: #555;
+}
+
+#order-details hr {
+    border: 1px solid #ddd;
+    margin: 20px 0;
+}
+
+h3 {
+    text-align: center;
+    color: #333;
+    margin-top: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #f4f4f4;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+tr:hover {
+    background-color: #f1f1f1;
+}

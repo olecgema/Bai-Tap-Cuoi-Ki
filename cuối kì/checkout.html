@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang thanh toán</title>
+    <link rel="stylesheet" href="checkout.css">
+    <style>
+        .order {
+            margin-bottom: 20px;
+        }
+        .delete-btn, .delete-all-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .delete-all-btn {
+            background-color: darkred;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="box1">
+            <h1> Trang chủ</h1>
+            <h1>Quản lý quần</h1>
+            <h1 onclick="qla()">Quản Lý áo</h1>
+            <h1>Quản lý nhân viên</h2>
+            <h1>Doanh thu hôm nay</h1>
+        </div>
+        <div class="box2">
+            <h2>Thông tin các đơn hàng đã thanh toán</h2>
+            <div id="order-details">
+                <!-- Order details will be populated here -->
+            </div>
+            <button class="delete-all-btn" onclick="deleteAllOrders()">Xoá hết các hoá đơn</button>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const orderDetails = document.getElementById('order-details');
+                    loadOrdersFromLocalStorage();
+        
+                    function loadOrdersFromLocalStorage() {
+                        let orders = JSON.parse(localStorage.getItem('orders')) || [];
+        
+                        orders.forEach((order, index) => {
+                            const orderDiv = document.createElement('div');
+                            orderDiv.classList.add('order');
+                            orderDiv.setAttribute('data-index', index);
+        
+                            let orderHTML = `<h3>Đơn hàng ${index + 1}</h3>`;
+                            orderHTML += '<table>';
+                            orderHTML += '<thead><tr><th>ID sản phẩm</th><th>Tên sản phẩm</th><th>Giá</th><th>Số lượng</th></tr></thead><tbody>';
+        
+                            let totalPrice = 0;
+        
+                            order.forEach(item => {
+                                totalPrice += item.price * item.quantity;
+                                orderHTML += `
+                                    <tr>
+                                        <td>${item.id}</td>
+                                        <td>${item.name}</td>
+                                        <td>${item.price.toLocaleString()}</td>
+                                        <td>${item.quantity}</td>
+                                    </tr>
+                                `;
+                            });
+        
+                            orderHTML += `</tbody></table>`;
+                            orderHTML += `<p><strong>Tổng tiền: ${totalPrice.toLocaleString()} VND</strong></p>`;
+                            orderHTML += `<button class="delete-btn" onclick="deleteOrder(${index})">Xoá đơn hàng này</button><hr>`;
+                            orderDiv.innerHTML = orderHTML;
+                            orderDetails.appendChild(orderDiv);
+                        });
+                    }
+                });
+        
+                function deleteOrder(index) {
+                    let orders = JSON.parse(localStorage.getItem('orders')) || [];
+                    orders.splice(index, 1);
+                    localStorage.setItem('orders', JSON.stringify(orders));
+                    location.reload();
+                }
+        
+                function deleteAllOrders() {
+                    localStorage.removeItem('orders');
+                    location.reload();
+                }
+            </script>
+        </div>
+    </div>
+</body>
+</html>

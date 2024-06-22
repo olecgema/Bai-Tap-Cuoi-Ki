@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý bán hàng</title>
+    <link rel="stylesheet" href="qla.css">
+</head>
+<body>
+    <div class="box">
+        <div class="box1">
+            <h1>Trang chủ</h1>
+            <h1>Quản lý quần</h1>
+            <h1>Quản lý áo</h1>
+            <h1>Quản lý nhân viên</h1>
+            <h1>Doanh thu hôm nay</h1>
+        </div>
+        <div class="box2">
+            <h2>Quản lý bán hàng</h2>
+            <form id="product-form">
+                <input type="text" id="product-id" placeholder="ID sản phẩm" required>
+                <input type="text" id="product-name" placeholder="Tên sản phẩm" required>
+                <input type="number" id="product-price" placeholder="Giá sản phẩm" required>
+                <input type="text" id="product-size" placeholder="Kích thước" required>
+                <input type="file" id="product-image" accept="image/*" required>
+                <input type="number" id="product-quantity" placeholder="Số Lượng" required>
+                <button type="submit">Thêm sản phẩm</button>
+            </form>
+            <h2>Danh sách sản phẩm</h2>
+            <input type="text" id="search-bar" placeholder="Tìm kiếm sản phẩm theo ID">
+            <table id="product-list">
+                <thead>
+                    <tr>
+                        <th>ID sản phẩm</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Giá</th>
+                        <th>Kích thước</th>
+                        <th>Số Lượng</th>
+                        <th>Hình ảnh</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <div id="pagination">
+                <button id="prev-page">Trước</button>
+                <span id="page-info"></span>
+                <button id="next-page">Sau</button>
+            </div>
+            <h2>Giỏ hàng</h2>
+            <table id="cart-list">
+                <thead>
+                    <tr>
+                        <th>ID sản phẩm</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Giá</th>
+                        <th>Số Lượng</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <h2>Tổng tiền: <span id="total-price">0</span> VND</h2>
+            <button id="checkout-button">Thanh toán</button>
+        </div>
+    </div>
+
+    <!-- Hộp thoại chỉnh sửa -->
+    <div id="edit-dialog" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Chỉnh sửa sản phẩm</h2>
+            <form id="edit-form">
+                <input type="text" id="edit-product-id" placeholder="ID sản phẩm" required>
+                <input type="text" id="edit-product-name" placeholder="Tên sản phẩm" required>
+                <input type="number" id="edit-product-price" placeholder="Giá sản phẩm" required>
+                <input type="text" id="edit-product-size" placeholder="Kích thước" required>
+                <input type="file" id="edit-product-image" accept="image/*">
+                <input type="number" id="edit-product-quantity" placeholder="Số Lượng" required>
+                <button type="submit">Cập nhật sản phẩm</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const productForm = document.getElementById('product-form');
+            const productList = document.getElementById('product-list').getElementsByTagName('tbody')[0];
+            const cartList = document.getElementById('cart-list').getElementsByTagName('tbody')[0];
+            const totalPriceElem = document.getElementById('total-price');
+            const editDialog = document.getElementById('edit-dialog');
+            const editForm = document.getElementById('edit-form');
+            const closeBtn = document.getElementsByClassName('close')[0];
+            const searchBar = document.getElementById('search-bar');
+            const checkoutButton = document.getElementById('checkout-button');
+            const prevPageButton = document.getElementById('prev-page');
+            const nextPageButton = document.getElementById('next-page');
+            const pageInfo = document.getElementById('page-info');
+            let currentEditRow = null;
+            let currentPage = 1;
+            const productsPerPage = 5;
+
+            loadProductsFromLocalStorage();
+            loadCartFromLocalStorage();
+            updateTotalPrice();
+
+            productForm.addEventListener('submit', addProduct);
+            editForm.addEventListener('submit', updateProduct);
+            closeBtn.addEventListener('click', () => { editDialog.style.display = 'none'; });
+            window.addEventListener('click', (event) => { if (event.target == editDialog) { editDialog.style.display = 'none'; } });
+            searchBar.addEventListener('input', filterProducts);
+            checkoutButton.addEventListener('click', handleCheckout);
+            prevPageButton.addEventListener('click', () => changePage(-1));
+            nextPageButton.addEventListener('click', () => changePage(1));
+
+            function addProduct(event) {
+                event.preventDefault();
+
+                const productId = document.getElementById('product-id').value;
+                const productName = document.getElementById('product-name').value;
+                const productPrice = document.getElementById('product-price').value;
+                const productSize = document.getElementById('product-size').value;
+                const productQuantity = document.getElementById('product-quantity').value;
+                const productImage = document.getElementById('product-image').files[0];
+
+                if (!productImage) {
+                    alert("Vui lòng chọn một hình ảnh.");
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageSrc = e.target.result;
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td>${productId}</td>
+                        <td>${productName}</td>
+                        <td>${productPrice}</td>
+                        <td>${productSize}</td>
+                        <td>${productQuantity}</td>
+                        <td><img src="${imageSrc}" alt="${productName}"></td>
+                        <td>
+                            <button class="edit">Chỉnh sửa</button>
+                            <button class="delete">Xóa</button>
+                            <button class="add">ATC</button>
+                        </td>
+                    `;
+
+                    productList.appendChild(row);
+                    saveProductToLocalStorage(productId, productName, productPrice, productSize, productQuantity, imageSrc);
+                    updateProductList();
+                };
+
+                reader.readAsDataURL(productImage);
+                productForm.reset();
+            }
+
+            productList.addEventListener('click', handleProductListClick);
+            cartList.addEventListener('click', handleCartListClick);
+
+            function handleProductListClick(event) {
+                if (event.target.classList.contains('delete')) {
+                    removeProduct(event);
+                } else if (event.target.classList.contains('edit')) {
+                    showEditDialog(event);
+                } else if (event.target.classList.contains('add')) {
+                    addToCart(event);
+                }
+            }
+
+            function handleCartListClick(event) {
+                if (event.target.classList.contains('remove')) {
+                    removeFromCart(event);
+                }
+            }
+
+            function addToCart(event) {
+                const row = event.target.parentElement.parentElement;
+                const cells = row.getElementsByTagName('td');
+
+                const productId = cells[0].innerText;
+                const productName = cells[1].innerText;
+                const productPrice = parseFloat(cells[2].innerText);
+                let productQuantity = parseInt(cells[4].innerText);
+
+                if (productQuantity <= 0) {
+                    alert("Sản phẩm đã hết hàng.");
+                    return;
+                }
+
+                productQuantity -= 1;
+                cells[4].innerText = productQuantity;
+
+                let cart = JSON.parse(localStorage.getItem('cart')) || [];
+                const cartItemIndex = cart.findIndex(item => item.id === productId);
+
+                if (cartItemIndex > -1) {
+                    cart[cartItemIndex].quantity += 1;
+                } else {
+                    cart.push({ id: productId, name: productName, price: productPrice, quantity: 1 });
+                }
+
+                localStorage.setItem('cart', JSON.stringify(cart));
+                updateProductQuantityInLocalStorage(productId, productQuantity);
+                loadCartFromLocalStorage();
+                updateTotalPrice();
+            }
+
+            function loadCartFromLocalStorage() {
+                cartList.innerHTML = '';
+                let cart = JSON.parse(localStorage.getItem('cart')) || [];
+                cart.forEach(item => {
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td>${item.id}</td>
+                        <td>${item.name}</td>
+                        <td>${item.price}</td>
+                        <td>${item.quantity}</td>
+                        <td>
+                            <button class="remove">Remove</button>
+                        </td>
+                    `;
+
+                    cartList.appendChild(row);
+                });
+            }
+
+            function removeFromCart(event) {
+                const row = event.target.parentElement.parentElement;
+                const cells = row.getElementsByTagName('td');
+
+                const productId = cells[0].innerText;
+                let productQuantity = parseInt(cells[3].innerText);
+
+                let cart = JSON.parse(localStorage.getItem('cart')) || [];
+                const cartItemIndex = cart.findIndex(item => item.id === productId);
+
+                if (cartItemIndex > -1) {
+                    const productRow = Array.from(productList.rows).find(row => row.cells[0].innerText === productId);
+                    if (productRow) {
+                        const productCells = productRow.getElementsByTagName('td');
+                        let stockQuantity = parseInt(productCells[4].innerText);
+                        stockQuantity += productQuantity;
+                        productCells[4].innerText = stockQuantity;
+                        updateProductQuantityInLocalStorage(productId, stockQuantity);
+                    }
+
+                    cart.splice(cartItemIndex, 1);
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    loadCartFromLocalStorage();
+                    updateTotalPrice();
+                }
+            }
+
+            function updateTotalPrice() {
+                let cart = JSON.parse(localStorage.getItem('cart')) || [];
+                let totalPrice = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+                totalPriceElem.innerText = totalPrice.toLocaleString();
+            }
+
+            function showEditDialog(event) {
+                currentEditRow = event.target.parentElement.parentElement;
+                const cells = currentEditRow.getElementsByTagName('td');
+
+                document.getElementById('edit-product-id').value = cells[0].innerText;
+                document.getElementById('edit-product-name').value = cells[1].innerText;
+                document.getElementById('edit-product-price').value = cells[2].innerText;
+                document.getElementById('edit-product-size').value = cells[3].innerText;
+                document.getElementById('edit-product-quantity').value = cells[4].innerText;
+
+                editDialog.style.display = 'block';
+            }
+
+            function updateProduct(event) {
+                event.preventDefault();
+
+                const productId = document.getElementById('edit-product-id').value;
+                const productName = document.getElementById('edit-product-name').value;
+                const productPrice = document.getElementById('edit-product-price').value;
+                const productSize = document.getElementById('edit-product-size').value;
+                const productQuantity = document.getElementById('edit-product-quantity').value;
+                const productImage = document.getElementById('edit-product-image').files[0];
+
+                const cells = currentEditRow.getElementsByTagName('td');
+                cells[0].innerText = productId;
+                cells[1].innerText = productName;
+                cells[2].innerText = productPrice;
+                cells[3].innerText = productSize;
+                cells[4].innerText = productQuantity;
+
+                if (productImage) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const imageSrc = e.target.result;
+                        cells[5].getElementsByTagName('img')[0].src = imageSrc;
+                        saveProductToLocalStorage(productId, productName, productPrice, productSize, productQuantity, imageSrc);
+                    };
+                    reader.readAsDataURL(productImage);
+                } else {
+                    saveProductToLocalStorage(productId, productName, productPrice, productSize, productQuantity, cells[5].getElementsByTagName('img')[0].src);
+                }
+
+                editDialog.style.display = 'none';
+                updateProductList();
+            }
+
+            function removeProduct(event) {
+                const row = event.target.parentElement.parentElement;
+                const productId = row.getElementsByTagName('td')[0].innerText;
+                productList.removeChild(row);
+                removeProductFromLocalStorage(productId);
+                updateProductList();
+            }
+
+            function filterProducts() {
+                const filter = searchBar.value.toUpperCase();
+                const rows = productList.getElementsByTagName('tr');
+
+                Array.from(rows).forEach(row => {
+                    const productIdCell = row.getElementsByTagName('td')[0];
+                    if (productIdCell) {
+                        const productId = productIdCell.textContent || productIdCell.innerText;
+                        row.style.display = productId.toUpperCase().indexOf(filter) > -1 ? '' : 'none';
+                    }
+                });
+
+                updateProductList();
+            }
+
+            function saveProductToLocalStorage(id, name, price, size, quantity, image) {
+                let products = JSON.parse(localStorage.getItem('products')) || [];
+                const productIndex = products.findIndex(product => product.id === id);
+
+                if (productIndex > -1) {
+                    products[productIndex] = { id, name, price, size, quantity, image };
+                } else {
+                    products.push({ id, name, price, size, quantity, image });
+                }
+
+                localStorage.setItem('products', JSON.stringify(products));
+                updateProductList();
+            }
+
+            function removeProductFromLocalStorage(id) {
+                let products = JSON.parse(localStorage.getItem('products')) || [];
+                products = products.filter(product => product.id !== id);
+                localStorage.setItem('products', JSON.stringify(products));
+                updateProductList();
+            }
+
+            function updateProductQuantityInLocalStorage(id, quantity) {
+                let products = JSON.parse(localStorage.getItem('products')) || [];
+                const productIndex = products.findIndex(product => product.id === id);
+
+                if (productIndex > -1) {
+                    products[productIndex].quantity = quantity;
+                }
+
+                localStorage.setItem('products', JSON.stringify(products));
+                updateProductList();
+            }
+
+            function loadProductsFromLocalStorage() {
+                updateProductList();
+            }
+
+            function updateProductList() {
+                const products = JSON.parse(localStorage.getItem('products')) || [];
+                const filteredProducts = products.filter(product => {
+                    const filter = searchBar.value.toUpperCase();
+                    return product.id.toUpperCase().includes(filter);
+                });
+
+                productList.innerHTML = '';
+                const startIndex = (currentPage - 1) * productsPerPage;
+                const endIndex = Math.min(startIndex + productsPerPage, filteredProducts.length);
+
+                for (let i = startIndex; i < endIndex; i++) {
+                    const product = filteredProducts[i];
+                    const row = document.createElement('tr');
+
+                    row.innerHTML = `
+                        <td>${product.id}</td>
+                        <td>${product.name}</td>
+                        <td>${product.price}</td>
+                        <td>${product.size}</td>
+                        <td>${product.quantity}</td>
+                        <td><img src="${product.image}" alt="${product.name}"></td>
+                        <td>
+                            <button class="edit">Chỉnh sửa</button>
+                            <button class="delete">Xóa</button>
+                            <button class="add">ATC</button>
+                        </td>
+                    `;
+
+                    productList.appendChild(row);
+                }
+
+                pageInfo.innerText = `Trang ${currentPage} / ${Math.ceil(filteredProducts.length / productsPerPage)}`;
+                prevPageButton.disabled = currentPage === 1;
+                nextPageButton.disabled = currentPage === Math.ceil(filteredProducts.length / productsPerPage);
+            }
+
+            function changePage(change) {
+                currentPage += change;
+                updateProductList();
+            }
+
+            function handleCheckout() {
+                let cart = JSON.parse(localStorage.getItem('cart')) || [];
+                if (cart.length === 0) {
+                    alert("Giỏ hàng của bạn đang trống.");
+                    return;
+                }
+
+                let orders = JSON.parse(localStorage.getItem('orders')) || [];
+                orders.push(cart);
+                localStorage.setItem('orders', JSON.stringify(orders));
+
+                localStorage.removeItem('cart');
+                loadCartFromLocalStorage();
+                updateTotalPrice();
+
+                window.location.href = 'checkout.html';
+            }
+        });
+    </script>
+</body>
+</html>
